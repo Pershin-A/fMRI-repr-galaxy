@@ -24,7 +24,7 @@ jobs:
       - name: Run Galaxy XML test
         run: |
           set +e
-          planemo test --install_galaxy --no_dependency_resolution --no_conda_auto_init --test_output_text planemo_results.txt fmri_reproducibility.xml 2>&1 | tee planemo.log
+          CONDA_OVERRIDE_CUDA='' planemo test --install_galaxy --conda_dependency_resolution --conda_auto_install --conda_auto_init --conda_channels conda-forge,bioconda --test_output_text planemo_results.txt fmri_reproducibility.xml 2>&1 | tee planemo.log
           result=${PIPESTATUS[0]}
           if [ "$result" -ne 0 ]; then
             python - <<'PY'

@@ -22,10 +22,10 @@ With the dependencies from `requirements.txt` installed:
 python tests/make_fixture.py
 python -m unittest tests.test_runner -v
 planemo lint fmri_reproducibility.xml
-planemo test fmri_reproducibility.xml
+planemo test --install_galaxy --conda_dependency_resolution --conda_auto_install --conda_auto_init --conda_channels conda-forge,bioconda fmri_reproducibility.xml
 ```
 
-`planemo test` requires a working local Galaxy environment or lets Planemo provision one. Its XML test uses the synthetic subject, four voxels, OLS as the primary method and two ROC restarts. The GitHub Actions workflow runs the synthetic analysis and Galaxy XML linter on Linux with Python 3.12. A full scientific validation on an anonymized real subject and acceptance on the target Galaxy remain separate steps.
+`planemo test` provisions a temporary Galaxy and creates a Conda environment for the tool requirements. With an existing local Galaxy, replace `--install_galaxy` with `--galaxy_root /path/to/galaxy`; keep the Conda options. Its XML test uses the synthetic subject, four voxels, OLS as the primary method and two ROC restarts. This test passed in the local WSL Galaxy used for PsiScan. The GitHub Actions workflow runs the synthetic analysis, Galaxy XML linter and a Galaxy integration test on Linux. A full scientific validation on an anonymized real subject and acceptance on the target Galaxy remain separate steps.
 
 For a direct command-line run:
 
