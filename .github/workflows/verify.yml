@@ -22,4 +22,16 @@ jobs:
       - name: Run synthetic end-to-end test
         run: python -m unittest tests.test_runner -v
       - name: Run Galaxy XML test
-        run: planemo test --install_galaxy --no_dependency_resolution --no_conda_auto_init fmri_reproducibility.xml
+        run: |
+          set +e
+          planemo test --install_galaxy --no_dependency_resolution --no_conda_auto_init fmri_reproducibility.xml 2>&1 | tee planemo.log
+          result=${PIPESTATUS[0]}
+          if [ "$result" -ne 0 ]; then
+            python - <<'PY'
+          from pathlib import Path
+          tail = "\n".join(Path("planemo.log").read_text(errors="replace").splitlines()[-60:])
+          escaped = tail.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+          print(f"::error title=Planemo failure details::{escaped}")
+          PY
+            exit "$result"
+          fi
