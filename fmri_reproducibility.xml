@@ -1,0 +1,54 @@
+<tool id="fmri_reproducibility" name="fMRI Reproducibility" version="0.2.0" profile="22.05">
+  <description>GLM, ROC/Kappa and reproducibility maps from preprocessed fMRI</description>
+  <requirements>
+    <requirement type="package" version="3.12">python</requirement>
+    <requirement type="package" version="2.3.3">pandas</requirement>
+    <requirement type="package" version="2.3.5">numpy</requirement>
+    <requirement type="package" version="1.18.0">scipy</requirement>
+    <requirement type="package" version="5.3.2">nibabel</requirement>
+    <requirement type="package" version="3.11.0">matplotlib</requirement>
+    <requirement type="package" version="6.0.1">pyyaml</requirement>
+  </requirements>
+  <command detect_errors="exit_code"><![CDATA[
+python '$__tool_directory__/run_galaxy.py' --input '$input_zip' --subject-id '$subject_id' --output '$output_zip' --summary '$summary_json' --max-voxels '$max_voxels' --glm-method '$glm_method' --roc-restarts '$roc_restarts'
+  ]]></command>
+  <inputs>
+    <param name="input_zip" type="data" format="zip" label="ZIP с предобработанными данными" help="Архив должен содержать каталог с ID участника, subject.json и brain_mask.nii.gz внутри него." />
+    <param name="subject_id" type="text" label="ID участника" value="synthetic_01">
+      <validator type="regex" message="Только латинские буквы, цифры, _, . и -">^[A-Za-z0-9][A-Za-z0-9_.-]*$</validator>
+    </param>
+    <param name="glm_method" type="select" label="Метод GLM">
+      <option value="bayes" selected="true">Empirical Bayes</option>
+      <option value="ols">OLS</option>
+      <option value="choose_best_kappa">Выбрать по Kappa</option>
+    </param>
+    <param name="max_voxels" type="integer" label="Максимум вокселей (0 — все)" value="0" min="0" />
+    <param name="roc_restarts" type="integer" label="Число перезапусков ROC" value="50" min="1" />
+  </inputs>
+  <outputs>
+    <data name="output_zip" format="zip" label="${tool.name}: result archive" />
+    <data name="summary_json" format="json" label="${tool.name}: summary" />
+  </outputs>
+  <tests>
+    <test expect_num_outputs="2">
+      <param name="input_zip" value="synthetic_subject.zip" ftype="zip" />
+      <param name="subject_id" value="synthetic_01" />
+      <param name="glm_method" value="ols" />
+      <param name="max_voxels" value="4" />
+      <param name="roc_restarts" value="2" />
+      <output name="output_zip"><assert_contents><has_size min="100" /></assert_contents></output>
+      <output name="summary_json"><assert_contents><has_text text="synthetic_01" /></assert_contents></output>
+    </test>
+  </tests>
+  <help><![CDATA[
+Вход: ZIP с каталогом <subject_id>/, файлом subject.json, NIfTI BOLD для каждого run и TSV журналами событий. Используйте только обезличенные данные. Предобработка MATLAB/SPM в Galaxy отключена: загружайте уже предобработанные данные. Выходы: JSON-сводка и ZIP всех результатов (карты NIfTI, графики и служебные файлы).
+  ]]></help>
+  <citations>
+    <citation type="bibtex"><![CDATA[@misc{pershin_fmri_reproducibility_galaxy,
+      author = {Pershin, Andrey},
+      title = {fMRI Reproducibility for Galaxy},
+      year = {2026},
+      howpublished = {https://github.com/Pershin-A/fMRI-repr-galaxy}
+    }]]></citation>
+  </citations>
+</tool>

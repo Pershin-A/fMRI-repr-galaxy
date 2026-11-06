@@ -1,0 +1,9 @@
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.galaxy/
+.cache/
+planemo-cache/
+tool_test_output.*
+results/

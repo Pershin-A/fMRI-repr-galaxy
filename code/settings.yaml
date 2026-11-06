@@ -1,0 +1,790 @@
+# =============================================================================
+# settings.yaml
+#
+# fMRI-reproducibility project configuration.
+#
+# General rules:
+#   - Paths can be absolute or relative.
+#   - Relative paths are resolved against the folder containing settings.yaml,
+#     which is normally the "code" folder.
+#   - null means "not set / choose automatically".
+#   - true / false are YAML boolean values.
+#   - The current project folder layout is:
+#       code/    - Python source code and settings.yaml
+#       data/    - raw and preprocessed data, SPM scripts
+#       results/ - analysis outputs
+# =============================================================================
+
+
+# -----------------------------------------------------------------------------
+# paths
+# Main project paths and subject identifier.
+# -----------------------------------------------------------------------------
+paths:
+  # Subject ID.
+  # Allowed values: a string matching a subject folder name, for example:
+  #   M_Y3_003, M_Y3_057, M_Y3_007
+  # Used to locate:
+  #   data_path/<patient_id>
+  #   logs_path/<patient_id>
+  #   output_path/<patient_id>
+  patient_id: example_subject
+
+  # Folder with preprocessed fMRI data.
+  # Allowed values:
+  #   - relative path, for example ../data/preprocessed
+  #   - absolute path, for example C:/.../data/preprocessed
+  # If patient_id is set, data are searched in:
+  #   data_path/<patient_id>/
+  data_path: ../data/preprocessed
+
+  # Folder with experiment log files.
+  # Allowed values:
+  #   - usually the same as data_path if logs are inside the subject folder
+  #   - a separate folder containing log files
+  # If logs_path == data_path, logs are searched in:
+  #   data_path/<patient_id>/log/
+  logs_path: ../data/preprocessed
+
+  # Base folder for analysis outputs.
+  # Allowed values:
+  #   - relative path, for example ../results
+  #   - absolute path
+  # When output.run_folder_mode=timestamp_hash, a run is saved to:
+  #   output_path/<patient_id>/runs/<timestamp>_<run_name>_cfg_<hash>/
+  # When output.run_folder_mode=legacy, the old layout is used:
+  #   output_path/<patient_id>/<contrast_name>/
+  output_path: ../results
+
+  # Optional explicit brain mask path.
+  # Allowed values:
+  #   null / none / auto / "" - find the mask automatically
+  #   path to a .nii or .nii.gz file
+  # Recommended value: null, so changing patient_id automatically selects
+  # the corresponding preprocessed/<patient_id>/brain_mask.nii(.gz).
+  mask_path: null
+
+# -----------------------------------------------------------------------------
+# output
+# Output folder policy.
+# Goal: avoid overwriting old results when analysis parameters change.
+# -----------------------------------------------------------------------------
+output:
+  # Result folder creation mode.
+  # Allowed values:
+  #   timestamp_hash - recommended mode:
+  #                    output_path/<patient_id>/runs/<timestamp>_<run_name>_cfg_<hash>/
+  #   legacy         - old layout:
+  #                    output_path/<patient_id>/<contrast_name>/
+  #                    repeated runs may overwrite old files.
+  run_folder_mode: timestamp_hash
+
+  # Optional manual run name added to the result folder name.
+  # Allowed values:
+  #   null   - do not add a manual name
+  #   string - short experiment name, for example eb_5_restarts_no_prew
+  # The name is sanitized before it is used as a folder name.
+  run_name: null
+
+  # Append a short configuration hash to the run folder name.
+  # Allowed values: true / false.
+  include_config_hash: true
+
+  # Number of hash characters included in the run folder name.
+  # Allowed values: positive integer.
+  config_hash_length: 8
+
+  # Policy for the rare case when the target run folder already exists.
+  # Allowed values:
+  #   error     - stop with an error
+  #   overwrite - overwrite the existing folder
+  #   increment - add a suffix _001, _002, ...
+  existing_run_policy: increment
+
+  # Save a copy of the effective settings.yaml in the run folder.
+  # Allowed values: true / false.
+  save_settings_snapshot: true
+
+  # Save run_manifest.json with run date, patient_id, config hash and paths.
+  # Allowed values: true / false.
+  save_run_manifest: true
+
+  # Update output_path/<patient_id>/latest_run.txt after a successful run.
+  # Allowed values: true / false.
+  update_latest_pointer: true
+
+# -----------------------------------------------------------------------------
+# scanner
+# fMRI acquisition geometry and timing parameters.
+# -----------------------------------------------------------------------------
+scanner:
+  # Functional volume size along the X axis.
+  # Allowed values: positive integer.
+  nX: 53
+
+  # Functional volume size along the Y axis.
+  # Allowed values: positive integer.
+  nY: 63
+
+  # Functional volume size along the Z axis; also the number of slices.
+  # Allowed values: positive integer.
+  nZ: 52
+
+  # Number of time points after log-based scan filtering.
+  # Allowed values: positive integer.
+  # In the current task this is usually 72.
+  nT: 72
+
+  # Number of stimulus regressors.
+  # Allowed values: positive integer.
+  # In the current task this is usually 18.
+  nS: 18
+
+  # Number of runs used in the analysis.
+  # Allowed values: positive integer.
+  # For fr_1..fr_3 and me_1..me_3 this is 6.
+  nR: 6
+
+  # Repetition time in seconds.
+  # Allowed values: positive number.
+  TR: 2.5
+
+  # Slice acquisition time step used by the Python design matrix builder.
+  # Allowed values: non-negative number.
+  # If SPM slice timing correction has already been applied, design.use_slice_timing can be false.
+  slice_time_step: 0.1
+
+# -----------------------------------------------------------------------------
+# data
+# Run loading, log parsing and stimulus filtering settings.
+# -----------------------------------------------------------------------------
+data:
+  # Which run prefixes to use.
+  # Allowed values:
+  #   "+" - use all allowed run prefixes
+  #   "fr" - use only friend-reference runs
+  #   "me" - use only self-reference runs
+  run_mode: +
+
+  # Folder names that must not be treated as functional runs.
+  # Allowed values: list of folder names.
+  banned_run_names:
+  - log
+  - logs
+  - structural
+
+  # Subject IDs to skip in multi-subject workflows.
+  # Allowed values: list of subject IDs.
+  # Currently mostly kept for compatibility.
+  skip_patient_ids:
+  - M_y2_002
+
+  # Allowed functional run prefixes.
+  # Allowed values: list of strings, usually [fr, me].
+  run_name_prefixes:
+  - fr
+  - me
+
+  # Delimiter used in log files.
+  # Allowed values: string.
+  # Use "\t" for tab-separated log files.
+  log_delimiter: "\t"
+
+  # Log column containing block/run number.
+  # Allowed values: column name string.
+  log_block_column: values.TestBlockNum
+
+  # Log column containing stimulus image name.
+  # Allowed values: column name string.
+  log_stimulus_column: stimulusitem1
+
+  # Log column containing prestimulus interval.
+  # Allowed values: column name string.
+  log_prestim_column: values.PreStimInterval
+
+  # Log column containing trial number.
+  # Allowed values: column name string.
+  log_trial_column: values.TestTrialNum
+
+  # Fallback log column containing onset values.
+  # Allowed values: column name string.
+  log_onset_column: offset
+
+  # Default event duration in seconds.
+  # Allowed values: positive number.
+  default_event_duration: 2.5
+
+  # Stimulus period in seconds used by the old onset formula:
+  #   onset = onset_base_shift_sec + s * stimulus_period_sec + prestim / 1000
+  # Allowed values: positive number.
+  stimulus_period_sec: 10.0
+
+  # Constant onset shift in seconds used by the old onset formula.
+  # Allowed values: number.
+  onset_base_shift_sec: 0.0
+
+# -----------------------------------------------------------------------------
+# design
+# First-level design matrix settings.
+# -----------------------------------------------------------------------------
+design:
+  # Design matrix type.
+  # Allowed values:
+  #   event_regressors - separate stimulus regressor for each stimulus.
+  design_type: event_regressors
+
+  # HRF model used to convolve events.
+  # Allowed values:
+  #   liou_spm_like - SPM-like double-gamma HRF used for this project
+  #   glover_like   - fallback Glover-like HRF if supported by the code
+  hrf_model: liou_spm_like
+
+  # Add slice acquisition timing offsets when building the design matrix.
+  # Allowed values: true / false.
+  # If SPM slice timing correction has already been applied, false is usually preferred.
+  use_slice_timing: false
+
+  # Add an intercept column to the first-level design matrix.
+  # Allowed values: true / false.
+  add_intercept: false
+
+  # Add low-frequency drift regressors.
+  # Allowed values: true / false.
+  add_drift_terms: false
+
+  # Type of drift regressors.
+  # Allowed values:
+  #   cosine - cosine drift basis
+  #   polynomial - polynomial drift basis, if supported by the code
+  drift_kind: cosine
+
+  # Number/order of drift components.
+  # Allowed values: non-negative integer.
+  # With add_drift_terms=false this value is ignored.
+  drift_order: 2
+
+  # High-pass cutoff in seconds for cosine drift construction.
+  # Allowed values: positive number.
+  high_pass_cutoff_sec: 128.0
+
+  # Normalize design matrix columns.
+  # Allowed values: true / false.
+  # For compatibility with the old code, false is usually preferred.
+  normalize_columns: false
+
+# -----------------------------------------------------------------------------
+# preprocessing
+# Python-side time series preprocessing and brain mask construction settings.
+# -----------------------------------------------------------------------------
+preprocessing:
+  # Apply AR(1) prewhitening to time series and design matrices.
+  # Allowed values: true / false.
+  prewhitening: true
+
+  # Estimate AR(1) rho from residuals when prewhitening is enabled.
+  # Allowed values: true / false.
+  # If false, fixed_rho is used.
+  estimate_rho_from_residuals: true
+
+  # Apply Worsley et al. approximate bias correction to residual AR(1) rho estimates.
+  # Allowed values: true / false.
+  rho_bias_correction: true
+
+  # Fixed AR(1) rho used when estimate_rho_from_residuals=false.
+  # Allowed values: number in a reasonable AR(1) range, usually between -1 and 1.
+  fixed_rho: 0.5
+
+  # Maximum absolute value allowed for estimated rho.
+  # Allowed values: number between 0 and 1.
+  rho_clip: 0.99
+
+  # Spatial smoothing FWHM for Worsley-style rho maps, in millimeters.
+  # Allowed values:
+  #   null - do not smooth rho
+  #   positive number - Gaussian FWHM in mm, Worsley default is 15 mm
+  rho_spatial_smoothing_fwhm: 15.0
+
+  # Brain mask method.
+  # Allowed values:
+  #   spm_tissue            - build mask from SPM tissue maps, if raw tissue files are available
+  #   functional_otsu       - functional mask by Otsu threshold
+  #   functional_percentile - functional mask by intensity percentile
+  # Ready-made SPM masks are used first when present.
+  mask_method: spm_tissue
+
+  # SPM tissue mask construction mode.
+  # Allowed values:
+  #   probability_sum - sum selected tissue probabilities and threshold the result.
+  spm_mask_mode: probability_sum
+
+  # SPM tissue classes used for the brain mask.
+  # Allowed values: list of integers.
+  # Typical values: [1, 2, 3] for gray matter, white matter and CSF.
+  spm_mask_tissue_classes:
+  - 1
+  - 2
+  - 3
+
+  # Threshold for the summed SPM tissue probability map.
+  # Allowed values: number between 0 and 1.
+  spm_mask_threshold: 0.5
+
+  # Transfer/resample the SPM structural mask to the functional grid.
+  # Allowed values: true / false.
+  spm_mask_resample_to_functional: true
+
+  # Method used to transfer structural mask to the functional grid.
+  # Allowed values:
+  #   fractional_occupancy - compute the fraction of structural voxel centers inside each functional voxel
+  #   resample_probability - resample probability maps and threshold them
+  spm_mask_transfer_method: fractional_occupancy
+
+  # Fraction threshold for fractional_occupancy mask transfer.
+  # Allowed values: number between 0 and 1.
+  spm_mask_fraction_threshold: 0.5
+
+  # Intersect the structural mask with the functional nonzero mask.
+  # Allowed values: true / false.
+  spm_mask_intersect_with_functional_nonzero: true
+
+  # Threshold used for the functional nonzero mask.
+  # Allowed values: non-negative number.
+  spm_mask_functional_nonzero_eps: 0.0
+
+  # Keep only the largest connected component of the mask.
+  # Allowed values: true / false.
+  mask_keep_largest_component: true
+
+  # Number of binary opening iterations applied to the mask.
+  # Allowed values: non-negative integer.
+  mask_opening_iterations: 0
+
+  # Number of binary closing iterations applied to the mask.
+  # Allowed values: non-negative integer.
+  mask_closing_iterations: 0
+
+  # Fill holes inside the binary brain mask.
+  # Allowed values: true / false.
+  mask_fill_holes: true
+
+  # Minimum acceptable number of brain-mask voxels.
+  # Allowed values: positive integer.
+  mask_min_voxels: 1000
+
+# -----------------------------------------------------------------------------
+# empirical_bayes
+# Empirical Bayes / EM GLM settings.
+# -----------------------------------------------------------------------------
+empirical_bayes:
+  # Maximum number of EM iterations inside one EM run.
+  # Allowed values: positive integer.
+  max_iter: 200
+
+  # EM convergence tolerance.
+  # Allowed values: positive number.
+  # Smaller values give stricter convergence but longer runtime.
+  tol: 1.0e-05
+
+  # Number of EM GLM runs with different initializations.
+  # Allowed values: positive integer.
+  # 1 = only the standard OLS-based initialization; 2 = OLS-based + one random initialization; N = OLS-based + N-1 random initializations.
+  n_restarts: 2
+
+  # Random seed for random EM GLM initializations.
+  # Allowed values: null or integer.
+  # Use an integer for reproducible random initializations.
+  random_seed: 12345
+
+  # Scale of random beta/h initialization relative to the OLS beta scale.
+  # Allowed values: positive number.
+  # Typical values: 0.1, 0.5, 1.0.
+  random_init_scale: 1.0
+
+  # Criterion for selecting the best EM GLM restart.
+  # Allowed values: log_likelihood.
+  # The selected run maximizes the observed-data log likelihood.
+  restart_selection_criterion: log_likelihood
+
+  # Ridge regularization added to Omega.
+  # Allowed values: non-negative number.
+  # Used for numerical stability.
+  omega_ridge: 1.0e-06
+
+  # Ridge regularization for B estimation.
+  # Allowed values: non-negative number.
+  b_ridge: 0.0
+
+  # Minimum allowed residual variance sigma^2.
+  # Allowed values: positive number.
+  min_sigma2: 1.0e-10
+
+  # Denominator used for Omega estimation.
+  # Allowed values:
+  #   liou_reml - divide by M - rank(X_star), Liou/REML-like
+  #   ml        - divide by M
+  omega_denominator: liou_reml
+
+  # Sigma^2 update rule.
+  # Allowed values:
+  #   liou_plugin - RSS / (n - k)
+  #   strict_em   - (RSS + tr(X H X^T)) / n
+  sigma_update: liou_plugin
+
+  # Verbose EB logs.
+  # Allowed values: true / false.
+  # Can produce very large logs during full voxelwise analysis.
+  verbose: false
+
+# -----------------------------------------------------------------------------
+# analysis
+# Main GLM, ROC/Kappa, reproducibility and output settings.
+# -----------------------------------------------------------------------------
+analysis:
+  # First-level contrasts.
+  # Allowed values:
+  #   {} - use the automatically built me_vs_fr contrast
+  #   mapping of contrast names to value vectors
+  first_level_contrasts: {}
+
+  # Second-level contrasts over X_star columns.
+  # Allowed values: mapping of contrast names to vectors.
+  # Current examples:
+  #   average                  - intercept/main average effect
+  #   me_session_vs_fr_session - contrast between self-reference and friend-reference sessions
+  second_level_contrasts:
+    average:
+      values:
+      - 1
+      - 0
+      auto_pad_to_k_star: false
+    me_session_vs_fr_session:
+      values:
+      - 0
+      - 1
+      auto_pad_to_k_star: false
+
+  # Primary second-level contrast used for the main T map.
+  # Allowed values: one of the keys in second_level_contrasts.
+  primary_second_level_contrast: me_session_vs_fr_session
+
+  # Second-level design matrix with one row per run.
+  # Allowed values: list of rows.
+  # Current convention:
+  #   first column  = intercept
+  #   second column = run type indicator: fr=-1, me=+1
+  # Run order must match the sorted run order used by the pipeline.
+  x_star:
+  - - 1
+    - -1
+  - - 1
+    - -1
+  - - 1
+    - -1
+  - - 1
+    - 1
+  - - 1
+    - 1
+  - - 1
+    - 1
+
+  # GLM method used for the main maps.
+  # Allowed values:
+  #   bayes             - empirical Bayes / EM GLM
+  #   ols               - ordinary least squares
+  #   choose_best_kappa - compute Bayes and OLS and choose the map with maximum Kappa
+  glm_method: bayes
+
+  # Which ROC curves to compute and plot.
+  # Allowed values:
+  #   bayes      - Bayes only
+  #   ols        - OLS only
+  #   both       - both curves
+  #   glm_method - only the method selected by glm_method
+  roc_plot_methods: bayes
+
+  # Show ROC curve lines.
+  # Allowed values: true / false.
+  roc_plot_show_curve: true
+
+  # Show ROC threshold points.
+  # Allowed values: true / false.
+  roc_plot_show_points: true
+
+  # Show Kappa information on ROC plots.
+  # Allowed values: true / false.
+  roc_plot_show_kappa: true
+
+  # Show the selected optimal working point.
+  # Allowed values: true / false.
+  roc_plot_show_optimal_point: true
+
+  # Show the fitted England EROC curve when enabled.
+  # Allowed values: true / false.
+  roc_plot_show_eroc: true
+
+  # DPI for saved ROC/Kappa figures.
+  # Allowed values: positive integer.
+  roc_plot_dpi: 160
+
+  # Threshold grid construction mode for ROC/Kappa.
+  # Allowed values:
+  #   quantiles - thresholds from abs(t) quantiles
+  #   linspace  - thresholds linearly spaced between min(abs(t)) and max(abs(t))
+  #   fixed     - thresholds linearly spaced between fixed_threshold_min and fixed_threshold_max
+  threshold_grid: quantiles
+
+  # Number of ROC/Kappa thresholds.
+  # Allowed values: positive integer.
+  n_thresholds: 40
+
+  # Lower bound for fixed threshold grid.
+  # Allowed values: number.
+  fixed_threshold_min: 0.0
+
+  # Upper bound for fixed threshold grid.
+  # Allowed values: number greater than fixed_threshold_min.
+  fixed_threshold_max: 8.0
+
+  # Lambda likelihood constraint mode.
+  # Allowed values:
+  #   none                  - no I(lambda <= rho) multiplier
+  #   indicator_upper_bound - use I(lambda <= rho)
+  lambda_likelihood_mode: indicator_upper_bound
+
+  # Upper bound rho for lambda when indicator_upper_bound is enabled.
+  # Allowed values: number between 0 and 1.
+  lambda_upper_bound: 0.2
+
+  # Initial lambda value for ROC EM.
+  # Allowed values: number between 0 and 1.
+  lambda_init: 0.12
+
+  # Maximum number of ROC EM iterations.
+  # Allowed values: positive integer.
+  roc_max_iter: 2000
+
+  # Lambda optimization mode for ROC mixture likelihood.
+  # Allowed values:
+  #   free  - estimate lambda, P_A and P_I
+  #   fixed - fix lambda and estimate P_A and P_I
+  #   both  - compute both free and fixed lambda modes
+  roc_lambda_optimization_mode: both
+
+  # Primary lambda mode used when one ROC result must be selected.
+  # Allowed values: free / fixed.
+  roc_primary_lambda_mode: free
+
+  # Fixed lambda value used when roc_lambda_optimization_mode includes fixed.
+  # Allowed values: number between 0 and 1.
+  roc_fixed_lambda: 0.12
+
+  # Initialization modes for ROC mixture EM restarts.
+  # Allowed values: list containing random and/or split_random.
+  roc_init_modes:
+  - random
+  - split_random
+
+  # ROC EM convergence tolerance.
+  # Allowed values: positive number.
+  roc_tol: 1.0e-08
+
+  # Number of ROC mixture EM restarts.
+  # Allowed values: positive integer.
+  roc_n_restarts: 50
+
+  # Run ROC mixture EM restarts in parallel.
+  # Allowed values: true / false.
+  roc_parallel_restarts: true
+
+  # Parallel backend for ROC restarts.
+  # Allowed values: thread / process.
+  roc_parallel_backend: thread
+
+  # Log progress of ROC restarts.
+  # Allowed values: true / false.
+  roc_log_restart_progress: true
+
+  # Number of workers used for ROC restarts.
+  # Allowed values: null or positive integer.
+  # null means choose automatically from available workers.
+  roc_restart_jobs: 6
+
+  # Random seed for ROC mixture EM restarts.
+  # Allowed values: null or integer.
+  roc_random_seed: 12345
+
+  # Minimum probability floor for ROC mixture distributions.
+  # Allowed values: positive number.
+  roc_min_probability: 1.0e-12
+
+  # Fit England EROC curve to ROC points.
+  # Allowed values: true / false.
+  fit_england_eroc: true
+
+  # Loss function used to fit England EROC.
+  # Allowed values: rmse / mae / max.
+  eroc_fit_loss: mae
+
+  # Threshold for strong reproducibility category.
+  # Allowed values: number between 0 and 1.
+  strong_reproducibility: 0.8
+
+  # Threshold for moderate reproducibility category.
+  # Allowed values: number between 0 and 1.
+  moderate_reproducibility: 0.6
+
+  # Threshold for weak reproducibility category.
+  # Allowed values: number between 0 and 1.
+  weak_reproducibility: 0.5
+
+  # Include moderate neighboring voxels in the final reproducibility map.
+  # Allowed values: true / false.
+  include_moderate_neighbors: true
+
+  # Number of workers for voxelwise GLM computation.
+  # Allowed values: positive integer.
+  # Use a value close to the number of logical CPU cores for long runs.
+  n_jobs: 10
+
+  # Optional limit on the number of brain-mask voxels processed.
+  # Allowed values: null or positive integer.
+  # Use a small value for quick test runs; null means process all voxels.
+  max_voxels: null
+
+  # Save NIfTI result maps.
+  # Allowed values: true / false.
+  save_nifti: true
+
+  # Save T-value histogram and heatmap plots.
+  # Allowed values: true / false.
+  save_tvalue_plots: true
+
+  # Number of bins in the T-value histogram.
+  # Allowed values: positive integer.
+  tvalue_hist_bins: 60
+
+  # Normalize T-value histogram to density.
+  # Allowed values: true / false.
+  tvalue_hist_density: true
+
+  # Number of Y bins in the T-value heatmap.
+  # Allowed values: positive integer.
+  tvalue_2d_bins_y: 80
+
+  # Optional lower Y limit for the T-value heatmap.
+  # Allowed values: null or number.
+  tvalue_2d_y_min: null
+
+  # Optional upper Y limit for the T-value heatmap.
+  # Allowed values: null or number.
+  tvalue_2d_y_max: null
+
+  # T-value magnitude that reaches full color intensity in GUI activity overlays.
+  # Allowed values: positive number.
+  # The final color scale is symmetric around zero and can also use max(abs(T)) depending on GUI mode.
+  activity_color_t_ref: 1.0
+
+  # Maximum alpha value for GUI activity overlay colors.
+  # Allowed values: number between 0 and 1.
+  activity_overlay_max_alpha: 0.85
+
+# -----------------------------------------------------------------------------
+# logging
+# Logging settings.
+# -----------------------------------------------------------------------------
+logging:
+  # Logging level.
+  # Allowed values: DEBUG, INFO, WARNING, ERROR, CRITICAL.
+  level: DEBUG
+
+  # Write logs to a file.
+  # Allowed values: true / false.
+  log_to_file: true
+
+  # Log file path.
+  # Allowed values: relative or absolute path.
+  log_file: ../results/liou_repro.log
+
+# -----------------------------------------------------------------------------
+# spm_preprocessing
+# Automatic MATLAB/SPM preprocessing of raw data.
+# -----------------------------------------------------------------------------
+spm_preprocessing:
+  # Enable the SPM preprocessing manager.
+  # Allowed values: true / false.
+  # Set false when you only want to view already computed results.
+  enabled: false
+
+  # Run MATLAB/SPM automatically when required preprocessed files are missing.
+  # Allowed values: true / false.
+  auto_run_if_missing: true
+
+  # Project data root folder.
+  # Allowed values: relative or absolute path.
+  # With the current structure this is ../data.
+  data_root: ../data
+
+  # Raw data folder.
+  # Allowed values: relative or absolute path.
+  # Expected structure: raw_root/<patient_id>/...
+  raw_root: ../data/raw
+
+  # SPM/Python-ready preprocessed data folder.
+  # Allowed values: relative or absolute path.
+  # Expected structure: preprocessed_root/<patient_id>/...
+  preprocessed_root: ../data/preprocessed
+
+  # SPM working folder for temporary preprocessing outputs.
+  # Allowed values: relative or absolute path.
+  work_root: ../data/preprocessed_spm_work
+
+  # SPM installation folder containing spm.m.
+  # Allowed values: absolute or relative path.
+  spm_dir: null
+
+  # MATLAB executable path or command.
+  # Allowed values:
+  #   matlab - if MATLAB is available in PATH
+  #   absolute path to matlab.exe
+  matlab_executable: matlab
+
+  # Path to spm_preprocess_project.m.
+  # Allowed values: relative or absolute path.
+  # With the current structure this is ../data/spm_preprocess_project.m.
+  matlab_script: ../data/spm_preprocess_project.m
+
+  # Use MATLAB -batch mode.
+  # Allowed values: true / false.
+  # Usually true for MATLAB R2019a and newer.
+  use_matlab_batch: true
+
+  # After SPM preprocessing, update config.paths.data_path/logs_path to preprocessed_root.
+  # Allowed values: true / false.
+  update_config_paths: true
+
+  # After SPM preprocessing, set config.paths.mask_path to the ready-made brain_mask.
+  # Allowed values: true / false.
+  # Usually true so the analysis uses the SPM brain mask.
+  set_mask_path: true
+
+  # Run folders required for a subject to be considered fully preprocessed.
+  # Allowed values: list of run folder names.
+  required_runs:
+  - fr_1
+  - fr_2
+  - fr_3
+  - me_1
+  - me_2
+  - me_3
+
+  # Minimum number of functional images in each required run.
+  # Allowed values: positive integer.
+  # Raw/exported runs may contain more images, but log filtering uses nT=72.
+  min_functional_images_per_run: 72
+
+  # Number of MATLAB/SPM threads/workers.
+  # Allowed values:
+  #   null - use analysis.n_jobs
+  #   positive integer
+  n_jobs: null
+

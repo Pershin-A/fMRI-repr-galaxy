@@ -1,0 +1,3 @@
+<section id="fmri_reproducibility" name="fMRI Reproducibility">
+  <tool file="fmri_reproducibility/fmri_reproducibility.xml" />
+</section>
