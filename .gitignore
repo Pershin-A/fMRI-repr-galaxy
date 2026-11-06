@@ -6,4 +6,7 @@ __pycache__/
 .cache/
 planemo-cache/
 tool_test_output.*
+planemo.log
+planemo_results.txt
+planemo_results.json
 results/
