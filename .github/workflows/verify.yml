@@ -24,13 +24,14 @@ jobs:
       - name: Run Galaxy XML test
         run: |
           set +e
-          planemo test --install_galaxy --no_dependency_resolution --no_conda_auto_init fmri_reproducibility.xml 2>&1 | tee planemo.log
+          planemo test --install_galaxy --no_dependency_resolution --no_conda_auto_init --test_output_text planemo_results.txt fmri_reproducibility.xml 2>&1 | tee planemo.log
           result=${PIPESTATUS[0]}
           if [ "$result" -ne 0 ]; then
             python - <<'PY'
           from pathlib import Path
-          tail = "\n".join(Path("planemo.log").read_text(errors="replace").splitlines()[-60:])
-          escaped = tail.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+          report = Path("planemo_results.txt")
+          details = report.read_text(errors="replace") if report.exists() else "\n".join(Path("planemo.log").read_text(errors="replace").splitlines()[-20:])
+          escaped = details[-3500:].replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
           print(f"::error title=Planemo failure details::{escaped}")
           PY
             exit "$result"
